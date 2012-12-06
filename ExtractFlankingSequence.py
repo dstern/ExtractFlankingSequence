@@ -1,5 +1,5 @@
 """
-Extract sequences 5' to short reads mapped to a reference genome
+Extract sequences 5' flanking or at 5' end of short reads mapped to a reference genome
 
 DEPENDENCIES
 
