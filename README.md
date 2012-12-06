@@ -11,8 +11,8 @@ numpy
 USAGE
 
 python ExtractFlankingSequence.py <sam file> <reference sequence.fasta> <# bp to extract> <output file name>
-# bp to extract < 0 extracts 5' flanking sequence
-# bp to extract > 0 extracts 5' mapped region
+if # bp to extract < 0 extracts 5' flanking sequence
+if # bp to extract > 0 extracts 5' mapped region
 
 e.g.
 
