@@ -15,7 +15,7 @@ python ExtractFlankingSequence.py <sam file> <reference sequence.fasta> <# bp to
 
 e.g.
 
-python ExtractFlankingSequence.py hits.sam dmel-4-chromosome-r5.33.fasta 20 flanks.fasta
+python ExtractFlankingSequence.py hits.sam dmel-4-chromosome-r5.33.fasta -20 flanks.fasta
 
 
 David L. Stern
