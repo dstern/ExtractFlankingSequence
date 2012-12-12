@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Extract sequences 5' flanking or at 5' end of short reads mapped to a reference genome
+Extract 1st N bases from reads mapped to a reference genome
 
 DEPENDENCIES
 
@@ -10,14 +10,11 @@ numpy
 
 USAGE
 
-python ExtractFlankingSequence.py <sam file> <reference sequence.fasta> <start bp to extract> <stop bp to extract> <output file name>
-bp < 0 extracts 5' flanking sequence
-bp > 0 extracts 5' mapped region
-start bp = 0
+python Extract1stNBasesFromMappedReads.py <sam file> <reference sequence.fasta> <# bp to extract> <output file name> <optional sequence prefix>
 
 e.g.
 
-python ExtractFlankingSequence.py hits.sam dmel-4-chromosome-r5.33.fasta -20 10 flanks.fasta
+python ExtractFlankingSequence.py hits.sam dmel.genome.fasta 20 out.fasta GATGGCAT
 
 
 David L. Stern
@@ -52,25 +49,28 @@ def main():
                 if o in ("-h", "--help"):
                         print __doc__
                         sys.exit(0)
-        if len(arg) < 5:
-                print "\nUsage: python ExtractFlankingSequence.py <sam file> <reference sequence.fasta> <start bp to extract> <stop bp to extract> <output file name>\bp < 0 extracts 5' flanking sequence\nbp > 0 extracts 5' mapped region\nStart position = 0\m"                
+        if len(arg) < 3:
+                print "\nUsage: python Extract1stNBasesFromMappedReads.py <sam file> <reference sequence.fasta> <# bp to extract> <output file name> <optional sequence prefix>\n"                
                 sys.exit(0)
         #process arguments
 
         SamFile = arg[0]
         RefGenome = arg[1]
-        StartBP = int(arg[2])
-        StopBP = int(arg[3])
-        OutFile = arg[4]
+        NumBP = int(arg[2])
+        OutFile = arg[3]
+        
+        if len(arg) == 5:
+                prefix = arg[4]
+        else:
+                prefix = ''
+                
         
         print "sam file = %s" %(SamFile)
-        print "reference genome = %s" %(RefGenome)
-        print "Start bp to extract = %s" %(StartBP)
-        print "Stop bp to extract = %s" %(StopBP)
+        print "Num bp to extract = %s" %(NumBP)
         print "Output File = %s" %(OutFile)
         
-        f = Fasta(RefGenome)
-        
+        f = Fasta(RefGenome,key_fn=lambda key: key.split()[0])
+
         sf = open(SamFile,'r')
         positions = []
         sequences = []
@@ -83,8 +83,8 @@ def main():
                         continue
                 if int(elements[4]) < 20:#discard mapped reads with low quality
                         continue
-                if len(elements[9]) < StopBP:
-                        continue
+                if len(elements[9]) < NumBP:
+                        continue                
                 else:
                         i = i+1
                         if i % 10000 == 0:                       
@@ -97,25 +97,20 @@ def main():
                         ch = str(elements[2])
                         StartDiff,insertion = idFromCIGAR(elements[5])
                         recalbp = bp - StartDiff#recalibrate start if initial positions were masked
-                        
-                        if forward == True:
-                                startPosition = recalbp + StartBP - 1 #these arrays count from 0
-                                stopPosition = recalbp +StopBP
-                                                                
-                        elif forward == False:
-                                startPosition = recalbp + insertion + len(elements[9]) - StopBP - 2 #these arrays count from 0
-                                stopPosition = recalbp + insertion + len(elements[9]) - StartBP - 1
-                                
-                        if startPosition < 1 or stopPosition > len(f[ch]): #discard reads that map too close to either end of the chromosome
+                        if recalbp + NumBP < 1: #discard reads that map too close to either end of the chromosome
                                 continue
-                        else:
-                                seqn = f[ch][startPosition:stopPosition]
-                                if forward == False:
+                        elif recalbp - NumBP > len(f[ch]) and forward == False:
+                                continue                 
+                        elif int(NumBP) > 0:#grab internal sequence
+                                if forward == True:
+                                        seqn = str(elements[9][0:NumBP])
+                                elif forward == False:
+                                        seqn = str(elements[9][-NumBP:])
                                         seqn = rc(seqn) #reverse complement sequence
                         
                         # save seqn in array                                
                         positions.append("ch" + ch + "_" + str(bp))
-                        sequences.append(seqn)
+                        sequences.append(prefix + seqn)
                                 
         sf.close()
                 
@@ -133,7 +128,7 @@ def rc(dna):
         rcseq = dna.translate(complements)[::-1]
         return rcseq          
 
-def idFromCIGAR(CIGAR):#insertion deletion and masking information from CIGAR
+def idFromCIGAR(CIGAR):
         position = 0
         Insertion = 0
         StartDiff = 0
