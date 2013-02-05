@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Extract sequences 5' flanking or at 5' end of short reads mapped to a reference genome
+Extract reference genome sequence 5' flanking or at 5' end of short reads mapped to a reference genome
 
 DEPENDENCIES
 
